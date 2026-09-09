@@ -13,8 +13,10 @@
     educacao:    { nome: 'Educação', emoji: '📚', kw: ['curso', 'faculdade', 'escola', 'mensalidade', 'apostila', 'material escolar', 'aula', 'udemy', 'alura'] },
     pets:        { nome: 'Pets', emoji: '🐶', kw: ['ração', 'pet', 'veterinário', 'petshop', 'cachorro', 'gato', 'banho e tosa'] },
     pessoal:     { nome: 'Pessoal', emoji: '💇', kw: ['cabelo', 'cabeleireiro', 'barbeiro', 'barbearia', 'salão', 'manicure', 'unha', 'depilação', 'estética'] },
-    outros:      { nome: 'Outros', emoji: '💸', kw: [] }
+    outros:      { nome: 'Outros', emoji: '💸', kw: [] },
+    renda:       { nome: 'Renda', emoji: '💰', kw: [] }
   };
+  const INCOME_WORDS = new Set(['ganhei', 'recebi', 'recebido', 'recebimento', 'entrou', 'entrada', 'caiu', 'salario', 'pagaram', 'receita', 'lucro', 'vendi', 'renda']);
 
   // ---------- Armazenamento ----------
   const KEY = 'gastei.items';
@@ -59,7 +61,7 @@
   }
 
   // ---------- Interpretação da frase ----------
-  const STOP = new Set(['reais', 'real', 'conto', 'contos', 'pila', 'pau', 'centavo', 'centavos', 'gastei', 'gasto', 'paguei', 'comprei', 'foi', 'de', 'da', 'do', 'no', 'na', 'nos', 'nas', 'em', 'com', 'pra', 'pro', 'para', 'o', 'a', 'os', 'as', 'um', 'uma', 'hoje', 'agora', 'anota', 'anotar', 'grava', 'gravar', 'e', 'r$', 'rs']);
+  const STOP = new Set(['reais', 'real', 'conto', 'contos', 'pila', 'pau', 'centavo', 'centavos', 'gastei', 'gasto', 'paguei', 'comprei', 'foi', 'ganhei', 'recebi', 'recebido', 'entrou', 'entrada', 'caiu', 'pagaram', 'meu', 'minha', 'me', 'de', 'da', 'do', 'no', 'na', 'nos', 'nas', 'em', 'com', 'pra', 'pro', 'para', 'o', 'a', 'os', 'as', 'um', 'uma', 'hoje', 'agora', 'anota', 'anotar', 'grava', 'gravar', 'e', 'r$', 'rs']);
   const NUMRE = /^(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?$/;
 
   function parse(textRaw) {
@@ -103,7 +105,8 @@
 
     const rest = raw.filter((w, i) => !used.has(i) && !STOP.has(norm[i]));
     const place = rest.length ? rest.join(' ').replace(/^./, c => c.toUpperCase()) : '';
-    return { value, place, cat: guessCat(place) };
+    const type = norm.some(w => INCOME_WORDS.has(w)) ? 'in' : 'out';
+    return { value, place, cat: type === 'in' ? 'renda' : guessCat(place), type };
   }
 
   function guessCat(place) {
@@ -118,10 +121,17 @@
 
   // ---------- Consultas ----------
   function inRange(a, b) { return items.filter(x => x.date >= a && x.date <= b); }
-  function sum(arr) { return arr.reduce((s, x) => s + x.value, 0); }
+  const isIn = x => x.type === 'in';
+  function sum(arr) { return arr.filter(x => !isIn(x)).reduce((s, x) => s + x.value, 0); }
+  function sumIn(arr) { return arr.filter(isIn).reduce((s, x) => s + x.value, 0); }
+  function saldoHtml(arr) {
+    const e = sumIn(arr), g = sum(arr);
+    if (!e) return '';
+    return `<p class="delta">Entradas <b class="in">+${money(e)}</b> · Saldo <b class="${e - g >= 0 ? 'in' : 'up'}">${money(e - g)}</b></p>`;
+  }
   function byCat(arr) {
     const o = {};
-    for (const x of arr) o[x.cat] = (o[x.cat] || 0) + x.value;
+    for (const x of arr) if (!isIn(x)) o[x.cat] = (o[x.cat] || 0) + x.value;
     return Object.entries(o).sort((a, b) => b[1] - a[1]);
   }
 
@@ -145,7 +155,7 @@
         <button class="mic" id="btn-mic" aria-label="Falar gasto">
           <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
         </button>
-        <p class="mic-hint">Toque e fale: "35 no mercado"</p>
+        <p class="mic-hint">Toque e fale: "35 no mercado" ou "recebi 200 de freela"</p>
         <button class="link" id="btn-type">ou digite</button>
       </div>
       <div class="totals">
@@ -153,7 +163,8 @@
         <div class="card"><p class="val">${money(sum(inRange(ws, we)))}</p><p class="lbl">Semana</p></div>
         <div class="card"><p class="val">${money(sum(inRange(ms, me)))}</p><p class="lbl">Mês</p></div>
       </div>
-      <div class="card"><h3>Últimos gastos</h3>${listHtml(recent, true)}</div>`;
+      ${sumIn(inRange(ms, me)) ? `<div class="card"><h3>Saldo do mês</h3><p class="big ${sumIn(inRange(ms, me)) - sum(inRange(ms, me)) >= 0 ? 'in' : 'up'}">${money(sumIn(inRange(ms, me)) - sum(inRange(ms, me)))}</p><p class="delta">Entradas +${money(sumIn(inRange(ms, me)))} · Gastos ${money(sum(inRange(ms, me)))}</p></div>` : ''}
+      <div class="card"><h3>Últimos lançamentos</h3>${listHtml(recent, true)}</div>`;
     $('#btn-mic').onclick = startVoice;
     $('#btn-type').onclick = openType;
     bindList();
@@ -168,7 +179,7 @@
     const max = Math.max(...totals, 1);
     const tIso = todayIso();
     view.innerHTML = `
-      <div class="card"><h3>Esta semana</h3><p class="big">${money(sum(cur))}</p>${deltaHtml(sum(cur), sum(prev), 'semana passada')}
+      <div class="card"><h3>Esta semana</h3><p class="big">${money(sum(cur))}</p>${deltaHtml(sum(cur), sum(prev), 'semana passada')}${saldoHtml(cur)}
         <div class="bars">${days.map((d, i) => `<div class="bar ${iso(d) === tIso ? 'today' : ''}"><small>${totals[i] ? Math.round(totals[i]) : ''}</small><i style="height:${(totals[i] / max) * 80}%"></i><b>${DIAS[i]}</b></div>`).join('')}</div>
       </div>
       <div class="card"><h3>Por categoria</h3>${catsHtml(cur)}</div>
@@ -184,10 +195,10 @@
     const media = sum(cur) / today.getDate();
     const projecao = media * me.getDate();
     view.innerHTML = `
-      <div class="card"><h3>${MESES[today.getMonth()]} de ${today.getFullYear()}</h3><p class="big">${money(sum(cur))}</p>${deltaHtml(sum(cur), sum(prev), 'mês passado')}
+      <div class="card"><h3>${MESES[today.getMonth()]} de ${today.getFullYear()}</h3><p class="big">${money(sum(cur))}</p>${deltaHtml(sum(cur), sum(prev), 'mês passado')}${saldoHtml(cur)}
         <p class="delta">Média de ${money(media)} por dia · projeção ${money(projecao)}</p></div>
       <div class="card"><h3>Por categoria</h3>${catsHtml(cur)}</div>
-      <div class="card"><h3>Maiores gastos</h3>${listHtml([...cur].sort((a, b) => b.value - a.value).slice(0, 5), true)}</div>`;
+      <div class="card"><h3>Maiores gastos</h3>${listHtml([...cur].filter(x => !isIn(x)).sort((a, b) => b.value - a.value).slice(0, 5), true)}</div>`;
     bindList();
   }
 
@@ -231,7 +242,7 @@
   }
   function itemHtml(x, showDate) {
     const c = CATS[x.cat] || CATS.outros;
-    return `<li data-id="${x.id}"><div class="emoji">${c.emoji}</div><div class="info"><div class="place">${esc(x.place || c.nome)}</div><div class="sub">${c.nome}${showDate ? ' · ' + dayLabel(x.date) : ''}</div></div><div class="amt">${money(x.value)}</div></li>`;
+    return `<li data-id="${x.id}"><div class="emoji">${c.emoji}</div><div class="info"><div class="place">${esc(x.place || c.nome)}</div><div class="sub">${c.nome}${showDate ? ' · ' + dayLabel(x.date) : ''}</div></div><div class="amt ${isIn(x) ? 'in' : ''}">${isIn(x) ? '+' : ''}${money(x.value)}</div></li>`;
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function bindList() { document.querySelectorAll('.list li[data-id]').forEach(li => li.onclick = () => openEdit(items.find(x => x.id === li.dataset.id))); }
@@ -254,6 +265,7 @@
     $('#confirm-title').textContent = title || 'Confirmar gasto';
     $('#f-value').value = parsed.value != null ? parsed.value : '';
     $('#f-place').value = parsed.place || '';
+    $('#f-type').value = parsed.type || 'out';
     $('#f-cat').value = parsed.cat || 'outros';
     $('#f-date').value = parsed.date || todayIso();
     $('#f-delete').classList.add('hidden');
@@ -271,12 +283,13 @@
   $('#f-save').onclick = () => {
     const value = parseFloat($('#f-value').value);
     if (!(value > 0)) { toast('Informe um valor', true); return; }
-    const place = $('#f-place').value.trim(), cat = $('#f-cat').value, date = $('#f-date').value || todayIso();
-    if (place) { learned[normalize(place)] = cat; saveLearn(); }
-    if (editing) Object.assign(editing, { value, place, cat, date });
-    else items.push({ id: uid(), value, place, cat, date, created: Date.now() });
+    const place = $('#f-place').value.trim(), type = $('#f-type').value, date = $('#f-date').value || todayIso();
+    const cat = type === 'in' ? 'renda' : ($('#f-cat').value === 'renda' ? 'outros' : $('#f-cat').value);
+    if (place && type === 'out') { learned[normalize(place)] = cat; saveLearn(); }
+    if (editing) Object.assign(editing, { value, place, cat, date, type });
+    else items.push({ id: uid(), value, place, cat, date, type, created: Date.now() });
     save(); hide('#confirm');
-    toast(`Anotado: ${money(value)}${place ? ' · ' + place : ''}`);
+    toast(`${type === 'in' ? 'Recebido' : 'Anotado'}: ${money(value)}${place ? ' · ' + place : ''}`);
     render();
   };
 
@@ -284,12 +297,12 @@
   function quickAdd(text) {
     const p = parse(text);
     if (p.value > 0) {
-      const item = { id: uid(), value: p.value, place: p.place, cat: p.cat, date: todayIso(), created: Date.now() };
+      const item = { id: uid(), value: p.value, place: p.place, cat: p.cat, date: todayIso(), type: p.type, created: Date.now() };
       items.push(item); save(); render();
-      toast(`Anotado: ${money(p.value)}${p.place ? ' · ' + p.place : ''} · ${CATS[p.cat].nome} (toque para corrigir)`);
+      toast(`${p.type === 'in' ? 'Recebido' : 'Anotado'}: ${money(p.value)}${p.place ? ' · ' + p.place : ''} · ${CATS[p.cat].nome} (toque para corrigir)`);
       $('#toast').onclick = () => { hide('#toast'); openEdit(item); };
     } else {
-      openConfirm({ value: null, place: p.place || text, cat: p.cat }, 'Não entendi o valor');
+      openConfirm({ value: null, place: p.place || text, cat: p.cat, type: p.type }, 'Não entendi o valor');
     }
   }
 
@@ -329,7 +342,7 @@
   $('#btn-help').onclick = () => { $('#help-url').textContent = location.origin + location.pathname + '?t='; show('#help'); };
   $('#help-close').onclick = () => hide('#help');
   $('#btn-export').onclick = () => {
-    const rows = [['data', 'valor', 'local', 'categoria'], ...items.map(x => [x.date, x.value.toFixed(2).replace('.', ','), x.place, CATS[x.cat].nome])];
+    const rows = [['data', 'tipo', 'valor', 'local', 'categoria'], ...items.map(x => [x.date, isIn(x) ? 'entrada' : 'saida', x.value.toFixed(2).replace('.', ','), x.place, CATS[x.cat].nome])];
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gastei.csv'; a.click();
