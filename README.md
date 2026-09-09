@@ -24,12 +24,12 @@ git init
 git add .
 git commit -m "Gastei v1"
 git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/gastei.git
+git remote add origin https://github.com/denis251212-art/gastei.git
 git push -u origin main
 ```
 
 4. No GitHub: Settings → Pages → Source: "Deploy from a branch" → Branch: `main` / `/ (root)` → Save.
-5. Em 1 ou 2 minutos o app fica em `https://SEU_USUARIO.github.io/gastei/`.
+5. Em 1 ou 2 minutos o app fica em `https://denis251212-art.github.io/gastei/`.
 
 ## Instalar no iPhone
 
@@ -43,7 +43,7 @@ No app **Atalhos** do iPhone, crie um novo atalho chamado **Gastei** com 3 açõ
 
 1. **Ditar Texto** — idioma Português (Brasil), parar de ouvir: após pausa.
 2. **Codificar URL** — entrada: *Texto Ditado*.
-3. **Abrir URLs** — `https://SEU_USUARIO.github.io/gastei/?t=` seguido da variável *Texto Codificado*.
+3. **Abrir URLs** — `https://denis251212-art.github.io/gastei/?t=` seguido da variável *Texto Codificado*.
 
 Depois é só dizer **"E aí Siri, Gastei"**, falar o gasto e pronto.
 O atalho também pode ir para a tela inicial, para um widget ou para o "toque nas costas" (Ajustes → Acessibilidade → Toque → Tocar Atrás).
