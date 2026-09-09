@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Gastei</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gastei">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <h1>Gastei</h1>
+  <button id="btn-help" class="icon-btn" aria-label="Ajuda">?</button>
+</header>
+
+<main id="view"></main>
+
+<nav class="tabs">
+  <button data-tab="home" class="active">Início</button>
+  <button data-tab="week">Semana</button>
+  <button data-tab="month">Mês</button>
+  <button data-tab="history">Histórico</button>
+</nav>
+
+<!-- Overlay de gravação -->
+<div id="rec" class="overlay hidden">
+  <div class="rec-box">
+    <div class="mic-anim"><span></span><span></span><span></span></div>
+    <p id="rec-status">Ouvindo…</p>
+    <p id="rec-text" class="rec-text"></p>
+    <button id="rec-cancel" class="ghost">Cancelar</button>
+  </div>
+</div>
+
+<!-- Confirmação / edição -->
+<div id="confirm" class="overlay hidden">
+  <div class="sheet">
+    <h2 id="confirm-title">Anotado</h2>
+    <label>Valor (R$)<input id="f-value" type="number" step="0.01" inputmode="decimal"></label>
+    <label>Onde<input id="f-place" type="text"></label>
+    <label>Categoria<select id="f-cat"></select></label>
+    <label>Data<input id="f-date" type="date"></label>
+    <div class="row">
+      <button id="f-delete" class="ghost danger hidden">Apagar</button>
+      <button id="f-cancel" class="ghost">Cancelar</button>
+      <button id="f-save" class="primary">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Entrada por texto -->
+<div id="typein" class="overlay hidden">
+  <div class="sheet">
+    <h2>Digite o gasto</h2>
+    <input id="t-text" type="text" placeholder="ex: 35 no mercado" autocomplete="off">
+    <div class="row">
+      <button id="t-cancel" class="ghost">Cancelar</button>
+      <button id="t-ok" class="primary">Anotar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ajuda -->
+<div id="help" class="overlay hidden">
+  <div class="sheet help">
+    <h2>Como usar</h2>
+    <p><b>1. Instale na tela inicial.</b> No Safari, toque em Compartilhar → <i>Adicionar à Tela de Início</i>.</p>
+    <p><b>2. Fale.</b> Toque no microfone e diga algo como <i>"35 no mercado"</i> ou <i>"vinte reais de uber"</i>.</p>
+    <p><b>3. Atalho da Siri (recomendado).</b> Abra o app <b>Atalhos</b> do iPhone e crie um atalho chamado <b>Gastei</b> com estas ações, nesta ordem:</p>
+    <ol>
+      <li><b>Ditar Texto</b> (idioma Português, parar após pausa)</li>
+      <li><b>Codificar URL</b> (entrada: Texto Ditado)</li>
+      <li><b>Abrir URLs</b> com o endereço:<br><code id="help-url"></code><br>(cole o endereço e, logo depois do <code>?t=</code>, insira a variável <i>Texto Codificado</i>)</li>
+    </ol>
+    <p>Depois é só dizer <i>"E aí Siri, Gastei"</i>, falar o gasto, e pronto. Pode colocar o atalho na tela inicial ou como widget também.</p>
+    <p class="muted">Seus dados ficam apenas neste aparelho.</p>
+    <div class="row">
+      <button id="btn-export" class="ghost">Exportar CSV</button>
+      <button id="help-close" class="primary">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
