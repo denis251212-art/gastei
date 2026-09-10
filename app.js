@@ -255,7 +255,12 @@
     return `<ul class="list compact">${arr.map(x => itemHtmlCompact(x, showDate)).join('')}</ul>`;
   }
   function splitHtml(gastos, entradas, showDate) {
-    return `<div class="split"><div class="col"><h4>Gastos</h4>${listHtmlCompact(gastos, showDate)}</div><div class="col"><h4>Entradas</h4>${listHtmlCompact(entradas, showDate)}</div></div>`;
+    const totalG = sum(gastos), totalE = sumIn(entradas);
+    return `<div class="split">
+      <div class="col"><h4>Gastos <span class="col-total">${money(totalG)}</span></h4>${listHtmlCompact(gastos, showDate)}</div>
+      <div class="col"><h4>Entradas <span class="col-total in">${money(totalE)}</span></h4>${listHtmlCompact(entradas, showDate)}</div>
+    </div>
+    <p class="delta split-total">Entradas <b class="in">+${money(totalE)}</b> · Gastos <b>${money(totalG)}</b> · Saldo <b class="${totalE - totalG >= 0 ? 'in' : 'up'}">${money(totalE - totalG)}</b></p>`;
   }
 
   // ---------- Overlays ----------

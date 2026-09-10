@@ -45,9 +45,12 @@ main{flex:1;padding:8px 16px 100px;overflow-y:auto}
 
 .split{display:flex;gap:10px;align-items:flex-start}
 .split .col{flex:1;min-width:0}
-.split h4{margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.split h4{margin:0 0 6px;display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
 .split .col:last-child h4{color:var(--accent)}
+.split .col-total{font-size:15px;color:var(--text);text-transform:none;letter-spacing:0;font-weight:800}
+.split .col-total.in{color:var(--accent)}
 .split .empty{padding:10px 0;font-size:12px}
+.split-total{margin-top:10px;padding-top:10px;border-top:1px solid #334155}
 .list.compact li{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 0}
 .list.compact .place{font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .list.compact .amt{font-size:13px;font-weight:700}
