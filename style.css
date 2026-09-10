@@ -43,6 +43,16 @@ main{flex:1;padding:8px 16px 100px;overflow-y:auto}
 .day-head{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;margin:14px 0 4px}
 .empty{color:var(--muted);text-align:center;padding:24px 0}
 
+.split{display:flex;gap:10px;align-items:flex-start}
+.split .col{flex:1;min-width:0}
+.split h4{margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.split .col:last-child h4{color:var(--accent)}
+.split .empty{padding:10px 0;font-size:12px}
+.list.compact li{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 0}
+.list.compact .place{font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list.compact .amt{font-size:13px;font-weight:700}
+.list.compact .sub{font-size:10px;color:var(--muted)}
+
 .bars{display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:8px}
 .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
 .bar i{display:block;width:100%;background:var(--bar);border-radius:6px 6px 2px 2px;min-height:2px}

@@ -149,7 +149,9 @@
     const today = new Date(), tIso = todayIso();
     const ws = iso(startOfWeek(today)), we = iso(addDays(startOfWeek(today), 6));
     const ms = iso(new Date(today.getFullYear(), today.getMonth(), 1)), me = iso(new Date(today.getFullYear(), today.getMonth() + 1, 0));
-    const recent = [...items].sort((a, b) => (b.date + b.created).localeCompare(a.date + a.created)).slice(0, 5);
+    const recentSorted = [...items].sort((a, b) => (b.date + b.created).localeCompare(a.date + a.created));
+    const recentOut = recentSorted.filter(x => !isIn(x)).slice(0, 5);
+    const recentIn = recentSorted.filter(isIn).slice(0, 5);
     view.innerHTML = `
       <div class="mic-wrap">
         <button class="mic" id="btn-mic" aria-label="Falar gasto">
@@ -164,7 +166,7 @@
         <div class="card"><p class="val">${money(sum(inRange(ms, me)))}</p><p class="lbl">Mês</p></div>
       </div>
       ${sumIn(inRange(ms, me)) ? `<div class="card"><h3>Saldo do mês</h3><p class="big ${sumIn(inRange(ms, me)) - sum(inRange(ms, me)) >= 0 ? 'in' : 'up'}">${money(sumIn(inRange(ms, me)) - sum(inRange(ms, me)))}</p><p class="delta">Entradas +${money(sumIn(inRange(ms, me)))} · Gastos ${money(sum(inRange(ms, me)))}</p></div>` : ''}
-      <div class="card"><h3>Últimos lançamentos</h3>${listHtml(recent, true)}</div>`;
+      <div class="card"><h3>Últimos lançamentos</h3>${splitHtml(recentOut, recentIn, true)}</div>`;
     $('#btn-mic').onclick = startVoice;
     $('#btn-type').onclick = openType;
     bindList();
@@ -183,7 +185,7 @@
         <div class="bars">${days.map((d, i) => `<div class="bar ${iso(d) === tIso ? 'today' : ''}"><small>${totals[i] ? Math.round(totals[i]) : ''}</small><i style="height:${(totals[i] / max) * 80}%"></i><b>${DIAS[i]}</b></div>`).join('')}</div>
       </div>
       <div class="card"><h3>Por categoria</h3>${catsHtml(cur)}</div>
-      <div class="card"><h3>Gastos da semana</h3>${listHtml([...cur].sort((a, b) => (b.date + b.created).localeCompare(a.date + a.created)), true)}</div>`;
+      <div class="card"><h3>Lançamentos da semana</h3>${splitHtml(cur.filter(x => !isIn(x)).sort((a, b) => (b.date + b.created).localeCompare(a.date + a.created)), cur.filter(isIn).sort((a, b) => (b.date + b.created).localeCompare(a.date + a.created)), true)}</div>`;
     bindList();
   }
 
@@ -205,16 +207,13 @@
   function historyView() {
     const sorted = [...items].sort((a, b) => (b.date + b.created).localeCompare(a.date + a.created));
     if (!sorted.length) { view.innerHTML = `<div class="card"><p class="empty">Nenhum gasto ainda. Toque no microfone no Início.</p></div>`; return; }
-    let html = '', lastDay = '';
+    const days = [];
     for (const x of sorted) {
-      if (x.date !== lastDay) {
-        if (lastDay) html += '</ul>';
-        lastDay = x.date;
-        html += `<p class="day-head">${dayLabel(x.date)} · ${money(sum(sorted.filter(y => y.date === x.date)))}</p><ul class="list">`;
-      }
-      html += itemHtml(x, false);
+      if (!days.length || days[days.length - 1].date !== x.date) days.push({ date: x.date, items: [] });
+      days[days.length - 1].items.push(x);
     }
-    view.innerHTML = `<div class="card">${html}</ul></div>`;
+    const html = days.map(d => `<p class="day-head">${dayLabel(d.date)} · ${money(sum(d.items))}</p>${splitHtml(d.items.filter(x => !isIn(x)), d.items.filter(isIn), false)}`).join('');
+    view.innerHTML = `<div class="card">${html}</div>`;
     bindList();
   }
 
@@ -246,6 +245,18 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function bindList() { document.querySelectorAll('.list li[data-id]').forEach(li => li.onclick = () => openEdit(items.find(x => x.id === li.dataset.id))); }
+
+  function itemHtmlCompact(x, showDate) {
+    const c = CATS[x.cat] || CATS.outros;
+    return `<li data-id="${x.id}"><span class="place">${c.emoji} ${esc(x.place || c.nome)}</span><span class="amt ${isIn(x) ? 'in' : ''}">${isIn(x) ? '+' : ''}${money(x.value)}</span>${showDate ? `<span class="sub">${dayLabel(x.date)}</span>` : ''}</li>`;
+  }
+  function listHtmlCompact(arr, showDate) {
+    if (!arr.length) return '<p class="empty">Nada aqui.</p>';
+    return `<ul class="list compact">${arr.map(x => itemHtmlCompact(x, showDate)).join('')}</ul>`;
+  }
+  function splitHtml(gastos, entradas, showDate) {
+    return `<div class="split"><div class="col"><h4>Gastos</h4>${listHtmlCompact(gastos, showDate)}</div><div class="col"><h4>Entradas</h4>${listHtmlCompact(entradas, showDate)}</div></div>`;
+  }
 
   // ---------- Overlays ----------
   function show(s) { $(s).classList.remove('hidden'); }
@@ -342,7 +353,7 @@
   $('#btn-help').onclick = () => { $('#help-url').textContent = location.origin + location.pathname + '?t='; show('#help'); };
   $('#help-close').onclick = () => hide('#help');
   $('#btn-export').onclick = () => {
-    const rows = [['data', 'tipo', 'valor', 'local', 'categoria'], ...items.map(x => [x.date, isIn(x) ? 'entrada' : 'saida', x.value.toFixed(2).replace('.', ','), x.place, CATS[x.cat].nome])];
+    const rows = [['data', 'local', 'categoria', 'saida', 'entrada'], ...items.map(x => [x.date, x.place, CATS[x.cat].nome, isIn(x) ? '' : x.value.toFixed(2).replace('.', ','), isIn(x) ? x.value.toFixed(2).replace('.', ',') : ''])];
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gastei.csv'; a.click();
